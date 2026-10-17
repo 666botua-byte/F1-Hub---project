@@ -1,0 +1,6 @@
+@F1Hub.Api_HostAddress = http://localhost:5183
+
+GET {{F1Hub.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
