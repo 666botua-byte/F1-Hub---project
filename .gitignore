@@ -430,3 +430,5 @@ FodyWeavers.xsd
 # React client
 node_modules/
 client/dist/
+
+.idea/
