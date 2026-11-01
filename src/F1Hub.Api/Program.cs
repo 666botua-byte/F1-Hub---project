@@ -1,22 +1,43 @@
 using F1Hub.Api.Data;
-using F1Hub.Api.Services; // NEW
+using F1Hub.Api.Services; 
 using Microsoft.EntityFrameworkCore;
 using F1Hub.Api.Endpoints;
+
+// Додані імпорти для JWT
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
-// NEW: клієнт для F1 API
+// клієнт для F1 API
 builder.Services.AddHttpClient<IF1ApiClient, F1ApiClient>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["F1Api:BaseUrl"]!);
     client.Timeout = TimeSpan.FromSeconds(10);
 });
 
+// Налаштування JWT
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        };
+    });
+builder.Services.AddAuthorization();
+
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 builder.Services.AddCors(options =>
@@ -26,6 +47,7 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod()));
 
 var app = builder.Build();
+
 app.UseCors("client");
 
 // Configure the HTTP request pipeline.
@@ -33,8 +55,14 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-app.MapAuthEndpoints();
+
 app.UseHttpsRedirection();
+
+// Додано middleware для аутентифікації та авторизації
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapAuthEndpoints();
 
 var summaries = new[]
 {
@@ -55,7 +83,7 @@ app.MapGet("/weatherforecast", () =>
 })
 .WithName("GetWeatherForecast");
 
-// NEW: розклад гонок з F1 API
+// розклад гонок з F1 API
 app.MapGet("/api/schedule/{season?}", async (string? season, IF1ApiClient f1, CancellationToken ct) =>
 {
     try
