@@ -2,8 +2,6 @@ using F1Hub.Api.Data;
 using F1Hub.Api.Services; 
 using Microsoft.EntityFrameworkCore;
 using F1Hub.Api.Endpoints;
-
-// Додані імпорти для JWT
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -13,14 +11,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
-// клієнт для F1 API
 builder.Services.AddHttpClient<IF1ApiClient, F1ApiClient>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["F1Api:BaseUrl"]!);
     client.Timeout = TimeSpan.FromSeconds(10);
 });
 
-// Налаштування JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -37,7 +33,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
-// Add services to the container.
 builder.Services.AddOpenApi();
 
 builder.Services.AddCors(options =>
@@ -50,7 +45,6 @@ var app = builder.Build();
 
 app.UseCors("client");
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -58,7 +52,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Додано middleware для аутентифікації та авторизації
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -83,7 +76,7 @@ app.MapGet("/weatherforecast", () =>
 })
 .WithName("GetWeatherForecast");
 
-// розклад гонок з F1 API
+// Розклад гонок (тепер захищений)
 app.MapGet("/api/schedule/{season?}", async (string? season, IF1ApiClient f1, CancellationToken ct) =>
 {
     try
@@ -95,7 +88,7 @@ app.MapGet("/api/schedule/{season?}", async (string? season, IF1ApiClient f1, Ca
         return Results.Problem(title: "F1 API error", detail: ex.Message,
             statusCode: StatusCodes.Status502BadGateway);
     }
-});
+}).RequireAuthorization(); 
 
 app.Run();
 
