@@ -16,4 +16,8 @@ public class User
 
     public List<Article> Articles { get; set; } = new();
     public List<Order> Orders { get; set; } = new();
+    
+    public string? ResetPasswordToken { get; set; }
+    
+    public DateTime? ResetPasswordTokenExpiry { get; set; }
 }
