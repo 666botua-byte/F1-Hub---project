@@ -10,7 +10,6 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     
-    # 1. Додаємо сервіс PostgreSQL для тестів
     services:
       postgres:
         image: postgres:15-alpine
@@ -25,13 +24,24 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
+    
     steps:
-      # ... (тут ваші існуючі кроки Checkout, Setup .NET, Restore, Build) ...
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore
 
       - name: Test
         run: dotnet test --no-build
-        # 2. Додаємо рядок підключення до тестової БД
         env:
           ConnectionStrings__Default: "Host=localhost;Port=5432;Database=f1hub_test;Username=postgres;Password=testpassword"
           Jwt__Key: ci-only-key-must-be-long-enough-for-testing
