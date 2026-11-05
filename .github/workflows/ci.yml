@@ -25,6 +25,8 @@ jobs:
 
       - name: Test
         run: dotnet test --no-build
+        env:
+          Jwt__Key: ci-only-test-key-not-a-secret-0123456789abcdef
 
   frontend:
     runs-on: ubuntu-latest
